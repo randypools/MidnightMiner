@@ -561,7 +561,7 @@ class MinerWorker:
                 challenge = self.challenge_tracker.get_unsolved_challenge(self.address)
 
                 if not challenge:
-                    self.update_status(current_challenge='All challenges completed', attempts=0, hash_rate=0)
+                    self.update_status(current_challenge='Waiting...', attempts=0, hash_rate=0)
                     time.sleep(60)
                     continue
 
@@ -575,14 +575,14 @@ class MinerWorker:
                     # Mark as expired (skip it)
                     self.challenge_tracker.mark_solved(challenge_id, self.address)
                     self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Challenge {challenge_id} expired")
-                    self.update_status(current_challenge='Challenge expired')
+                    self.update_status(current_challenge='Expired')
                     time.sleep(5)
                     continue
 
                 # Get or build ROM for this challenge
                 no_pre_mine = challenge["no_pre_mine"]
                 if no_pre_mine not in rom_cache:
-                    self.update_status(current_challenge=f'Building ROM for {challenge_id[:10]}...')
+                    self.update_status(current_challenge=f'Building ROM')
                     self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Building ROM for challenge {challenge_id}")
                     rom_cache[no_pre_mine] = ashmaize.build_rom(no_pre_mine)
 
@@ -705,22 +705,22 @@ def display_dashboard(status_dict, num_workers, stats_update_interval=600):
 
                 # Pad first, then color
                 challenge_display_padded = f"{challenge_display:<20}"
-                if challenge_display not in ["Waiting", "N/A", "All challenges ..."]:
+                if "**" in challenge_display:
                     challenge_display_padded = color_text(challenge_display_padded, GREEN)
 
                 attempts = status.get('attempts', 0) or 0
                 hash_rate = status.get('hash_rate', 0) or 0
                 completed = status.get('completed_challenges', 0) or 0
-                night = round(status.get('night_allocation', 0) or 0, 3)
+                night = color_text(str(round(status.get('night_allocation', 0) or 0, 2)), GREEN)
 
                 total_hashrate += hash_rate
                 total_completed += completed
-                total_night += night
+                total_night += status.get('night_allocation', 0) or 0
 
                 print(f"{worker_id:<4} {address:<44} {challenge_display_padded} {attempts:<10,} {hash_rate:<8.0f} {completed:<10} {night:<10}")
 
             # Totals row
-            totals_row = f"{'TOTAL':<4} {'':<44} {'':<20} {'':<10} {total_hashrate:<8.0f} {total_completed:<10} {total_night:<10}"
+            totals_row = f"{'TOTAL':<4} {'':<44} {'':<20} {'':<10} {total_hashrate:<8.0f} {total_completed:<10} {round(total_night, 2):<10}"
             print(color_text("-"*110, CYAN))
             print(color_text(totals_row, CYAN))
             print("="*110)
