@@ -148,7 +148,7 @@ The miner uses a native Rust library (`ashmaize_py`) for high-performance hashin
 |----------|--------------|--------|
 | Windows | x64 | ✓ Supported |
 | Linux | x64 | ✓ Supported |
-| Linux | ARM64 (Raspberry Pi, etc.) | Coming soon |
+| Linux | ARM64 (Raspberry Pi, etc.) | ✓ Supported |
 | macOS | Intel (x64) | ✓ Supported |
 | macOS | Apple Silicon (ARM64) | ✓ Supported |
 
