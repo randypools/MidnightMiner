@@ -101,19 +101,23 @@ You should run this once a day, as solutions can no longer be submitted after 24
 
 ## Claiming NIGHT
 
-You will need to claim your NIGHT tokens with the wallets created by the software. To access them:
+To make claiming easier, you need to send all earnings to a single address using `consolidate.py`. This allows the your NIGHT tokens to be claimed from a single wallet instead of having them spread across many wallets.
 
-1. Export your wallet keys by running:
-   ```
-   py export_skeys.py
-   ```
+**Important:** The destination address must be registered at https://sm.midnight.gd first!
 
-2. This creates a `skeys` folder with wallet files
+**To consolidate:**
+```
+py consolidate.py --destination addr1...
+```
 
-3. Import these files into a Cardano wallet (like Eternl):
-   - Open Eternl wallet
-   - Go to Add Wallet -> More -> CLI Signing Keys
-   - Select the files from the `skeys` folder
+Replace `addr1...` with your actual destination address. Type `CONFIRM` when prompted to proceed.
+
+**To undo consolidation:**
+```
+py consolidate.py --undo
+```
+
+This reverses the consolidation and registers each wallet back to itself.
 
 ## Visualising Mining Speed
 

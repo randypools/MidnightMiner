@@ -133,10 +133,30 @@ To disable donations, add the `--no-donation` flag:
 python miner.py --no-donation
 ```
 
+## Consolidating NIGHT Earnings
 
-## Exporting Wallets
+You can consolidate all NIGHT earnings to a single wallet using `consolidate.py`. This allows you to save on transaction fees by receiving all NIGHT tokens to a single address (when they are distributed).
 
-To claim your earned NIGHT tokens (when they are distributed), you will need to import your wallets' signing keys (`.skey` files) into a Cardano wallet like Eternl. The `export_skeys.py` script helps with this process.
+The destination address **must be registered** at https://sm.midnight.gd before consolidation.
+
+
+**Run the script:**
+```bash
+python consolidate.py
+```
+
+The script will prompt for confirmation before proceeding. Successfully consolidated wallets will donate all their earnings (past and future) to the destination address.
+
+**To undo consolidation:**
+```bash
+python consolidate.py --undo
+```
+
+This registers each wallet back to itself, reversing any previous donations.
+
+## Exporting Wallets Individually
+
+If you don't want to use the consolidation script, you can manually export all your wallets and claim from each of them. You will need to import your wallets' signing keys (`.skey` files) into a Cardano wallet like Eternl. The `export_skeys.py` script helps with this process.
 
 
 1.  **Run the export script**:
