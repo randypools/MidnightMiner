@@ -238,6 +238,7 @@ class MinerWorker:
                 if time_left <= 0:
                     self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Challenge {challenge_id} expired")
                     self.update_status(current_challenge='Expired')
+                    rom_cache.clear()
                     time.sleep(5)
                     continue
 
@@ -313,6 +314,7 @@ class MinerWorker:
                         self.current_challenge_data = None
                         self.submission_retry_count = 0
                         self.update_status(address=self.address)
+                        rom_cache.clear()
 
                         # Wait for a new challenge to appear
                         while True:
@@ -336,6 +338,7 @@ class MinerWorker:
                         self.current_nonce = None
                         self.current_challenge_data = None
                         self.submission_retry_count = 0
+                        rom_cache.clear()
                         time.sleep(5)
                     elif should_mark_solved:
                         self.challenge_tracker.mark_solved(challenge_id, self.address)
@@ -343,6 +346,7 @@ class MinerWorker:
                         self.current_nonce = None
                         self.current_challenge_data = None
                         self.submission_retry_count = 0
+                        rom_cache.clear()
                         time.sleep(5)
                     else:
                         # Network error - check retry count
@@ -362,6 +366,7 @@ class MinerWorker:
                             self.current_nonce = None
                             self.current_challenge_data = None
                             self.submission_retry_count = 0
+                            rom_cache.clear()
                             time.sleep(5)
                         else:
                             # Retry again (will retry on next loop iteration)
@@ -378,6 +383,7 @@ class MinerWorker:
                     self.current_nonce = None
                     self.current_challenge_data = None
                     self.submission_retry_count = 0
+                    rom_cache.clear()
 
                     if mining_for_developer:
                         self.update_status(address=self.address)
