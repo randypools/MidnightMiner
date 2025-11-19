@@ -49,7 +49,7 @@ def extract_addresses_from_json(path: Path) -> Set[str]:
     return addresses
 
 
-def fetch_wallet_statistics(session: requests.Session, wallet_address: str, api_base: str) -> Optional[Tuple[float, int, dict]]:
+def fetch_wallet_statistics(session: requests.Session, wallet_address: str, api_base: str, use_defensio: bool = False) -> Optional[Tuple[float, int, dict]]:
     url = f"{api_base}/statistics/{wallet_address}"
     try:
         response = session.get(url, timeout=8)
@@ -60,11 +60,13 @@ def fetch_wallet_statistics(session: requests.Session, wallet_address: str, api_
         return None
 
     local_stats = payload.get("local", {})
-    night_raw = local_stats.get("night_allocation", 0)
+    # Determine which allocation field to use based on API
+    allocation_field = "dfo_allocation" if use_defensio else "night_allocation"
+    token_raw = local_stats.get(allocation_field, 0)
     try:
-        night_tokens = float(night_raw) / 1_000_000.0
+        token_amount = float(token_raw) / 1_000_000.0
     except Exception:  # noqa: BLE001
-        night_tokens = 0.0
+        token_amount = 0.0
 
     solutions = local_stats.get("crypto_receipts", 0)
     try:
@@ -72,7 +74,7 @@ def fetch_wallet_statistics(session: requests.Session, wallet_address: str, api_
     except Exception:  # noqa: BLE001
         solutions_count = 0
 
-    return night_tokens, solutions_count, payload
+    return token_amount, solutions_count, payload
 
 
 def mask_wallet_address(address: str, visible: int = 6) -> str:
@@ -106,20 +108,20 @@ def create_sessions(proxy_config_path: str, desired_workers: int) -> Tuple[Tuple
     return tuple(sessions)
 
 
-def process_chunk(session: requests.Session, label: str, chunk: Iterable[str], api_base: str) -> Dict[str, Tuple[float, int]]:
+def process_chunk(session: requests.Session, label: str, chunk: Iterable[str], api_base: str, use_defensio: bool = False) -> Dict[str, Tuple[float, int]]:
     results: Dict[str, Tuple[float, int]] = {}
     for wallet_address in chunk:
-        result = fetch_wallet_statistics(session, wallet_address, api_base)
+        result = fetch_wallet_statistics(session, wallet_address, api_base, use_defensio)
         if result is None:
             continue
-        night_tokens, solutions_count, _payload = result
-        results[wallet_address] = (night_tokens, solutions_count)
+        token_amount, solutions_count, _payload = result
+        results[wallet_address] = (token_amount, solutions_count)
     return results
 
 
 def main(argv: Optional[Iterable[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Summarize NIGHT token balance for wallets described in JSON files."
+        description="Summarize token balance for wallets described in JSON files."
     )
     parser.add_argument(
         "--wallets-path",
@@ -159,6 +161,9 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     # Override API base if using Defensio
     if args.defensio:
         args.api_base = "https://mine.defensio.io/api"
+
+    # Determine token name based on API
+    token_name = "DFO" if args.defensio else "NIGHT"
 
     # If --address is specified, use it directly and skip wallet file discovery
     if args.address:
@@ -200,7 +205,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
         with ThreadPoolExecutor(max_workers=len(chunks) or 1) as executor:
             futures = [
-                executor.submit(process_chunk, session, label, chunk, args.api_base)
+                executor.submit(process_chunk, session, label, chunk, args.api_base, args.defensio)
                 for session, label, chunk in chunks
             ]
 
@@ -208,17 +213,17 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 chunk_result = future.result()
                 per_wallet.update(chunk_result)
 
-        total_night = 0.0
+        total_tokens = 0.0
         total_solutions = 0
         for address in sorted(per_wallet.keys()):
-            night_tokens, solutions_count = per_wallet[address]
+            token_amount, solutions_count = per_wallet[address]
             masked_address = mask_wallet_address(address)
-            total_night += night_tokens
+            total_tokens += token_amount
             total_solutions += solutions_count
-            print(f"{masked_address}: {night_tokens:.6f} NIGHT, {solutions_count} solutions")
+            print(f"{masked_address}: {token_amount:.6f} {token_name}, {solutions_count} solutions")
 
         print("-" * 60)
-        print(f"Total NIGHT across {len(per_wallet)} wallet(s): {total_night:.6f}")
+        print(f"Total {token_name} across {len(per_wallet)} wallet(s): {total_tokens:.6f}")
         print(f"Total solutions across {len(per_wallet)} wallet(s): {total_solutions}")
 
         missing = addresses - per_wallet.keys()

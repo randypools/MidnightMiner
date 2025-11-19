@@ -181,6 +181,7 @@ def main():
             use_defensio = True
             api_base = "https://mine.defensio.io/api"
             registration_portal = "https://defensio.io/mine"
+            print("You must to consolidate DFO to a DIFFERENT address than the one you consolidated your NIGHT to.")
         elif arg == '--help' or arg == '-h':
             print("Usage: python consolidate.py [--destination <address> | --undo] [--wallets-file <file>] [--defensio]")
             print()
@@ -332,7 +333,7 @@ def main():
         print("If you received 'not registered' errors, make sure your")
         print(f"destination address is registered at: {registration_portal}")
     else:
-        print(f"All NIGHT rewards from currently active wallets will be redeemable from: {destination_address}.")
+        print(f"All rewards from currently active wallets will be redeemable from: {destination_address}.")
         print("Run this script again at the end of the scavenger hunt to consolidate any newly generated wallets.")
 
     return 0
