@@ -19,8 +19,11 @@ def color_text(text, color):
     return f"{color}{text}{RESET}"
 
 
-def display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracker, initial_completed, night_balance_dict, api_base, start_time):
+def display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracker, initial_completed, night_balance_dict, api_base, start_time, use_defensio_api=False):
     """Display live dashboard - worker-centric view"""
+    # Determine token name based on API
+    token_name = "DFO" if use_defensio_api else "NIGHT"
+
     while True:
         try:
             time.sleep(5)
@@ -32,14 +35,14 @@ def display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracke
             uptime_secs = int(uptime_seconds % 60)
             uptime_str = f"{uptime_hours}h {uptime_minutes}m {uptime_secs}s"
 
-            # Check if we should update NIGHT balance (once per day after 2am UTC)
+            # Check if we should update token balance (once per day after 2am UTC)
             now_utc = datetime.now(timezone.utc)
             last_update_str = night_balance_dict.get('last_update_date')
             current_date = now_utc.date().isoformat()
 
             # Update if: different date AND current time is after 2am UTC AND we haven't updated today
             if now_utc.hour >= 2 and last_update_str != current_date:
-                new_balance = fetch_total_night_balance(wallet_manager, api_base)
+                new_balance = fetch_total_night_balance(wallet_manager, api_base, use_defensio_api)
                 if new_balance is not None:
                     night_balance_dict['balance'] = new_balance
                     night_balance_dict['last_update_date'] = current_date
@@ -108,12 +111,13 @@ def display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracke
             print(color_text(f"{'Total Hash Rate:':<20} {total_hashrate:.0f} H/s", CYAN))
             print(color_text(f"{'Total Completed:':<20} {completed_str}", CYAN))
             balance_display = night_balance_dict.get('balance')
+            balance_label = f"Total {token_name}*:"
             if balance_display is not None:
-                print(color_text(f"{'Total NIGHT*:':<20} {balance_display:.2f}", GREEN))
+                print(color_text(f"{balance_label:<20} {balance_display:.2f}", GREEN))
             else:
-                print(color_text(f"{'Total NIGHT*:':<20} Loading...", GREEN))
+                print(color_text(f"{balance_label:<20} Loading...", GREEN))
             print("="*110)
-            print("*Night balance updates every 24h")
+            print(f"*{token_name} balance updates every 24h")
             print("\nPress Ctrl+C to stop all miners")
 
         except KeyboardInterrupt:

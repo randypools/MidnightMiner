@@ -16,13 +16,13 @@ from miner.statistics import fetch_total_night_balance
 from miner.dashboard import display_dashboard
 from miner.worker_process import worker_process
 
-def display_consolidation_warning():
+def display_consolidation_warning(token_name="NIGHT"):
     print()
     print("="*70)
     print("⚠ IMPORTANT: Wallet Consolidation Recommended ⚠")
     print("="*70)
     print("This miner uses multiple wallets to mine efficiently.")
-    print("To avoid transaction fees you need to consolidate your NIGHT")
+    print(f"To avoid transaction fees you need to consolidate your {token_name}")
     print("into a single wallet (if you have not already done so).")
     print("Check the README for instructions.")
     print()
@@ -104,6 +104,9 @@ def main():
     wallets = wallet_manager.load_or_create_wallets(wallets_count, api_base, donation_enabled)
     logger.info(f"Loaded/created {len(wallets)} wallet(s)")
 
+    # Determine token name based on API
+    token_name = "DFO" if use_defensio_api else "NIGHT"
+
     # Fetch initial statistics
     print("\nFetching initial statistics...")
     challenge_tracker = ChallengeTracker(challenges_file)
@@ -112,24 +115,24 @@ def main():
     snapshot_balance, snapshot_timestamp = load_latest_balance_snapshot()
 
     # Try to fetch fresh balance
-    fresh_balance = fetch_total_night_balance(wallet_manager, api_base)
+    fresh_balance = fetch_total_night_balance(wallet_manager, api_base, use_defensio_api)
 
     if fresh_balance is not None:
         # Fresh balance fetched successfully (even if 0.0)
         initial_night = fresh_balance
-        print(f"✓ Initial NIGHT balance: {initial_night:.2f}")
+        print(f"✓ Initial {token_name} balance: {initial_night:.2f}")
         # Save balance snapshot if it's different from snapshot (or if no snapshot exists)
         if snapshot_balance is None or abs(fresh_balance - snapshot_balance) > 0.01:
             save_balance_snapshot(fresh_balance)
     elif snapshot_balance is not None:
         # Use snapshot as fallback
         initial_night = snapshot_balance
-        print(f"✓ Loaded NIGHT balance from snapshot: {initial_night:.2f} (from {snapshot_timestamp})")
+        print(f"✓ Loaded {token_name} balance from snapshot: {initial_night:.2f} (from {snapshot_timestamp})")
         print("  (Failed to fetch fresh balance, using cached snapshot)")
     else:
         # No balance available
         initial_night = 0.0
-        print("⚠ Could not load NIGHT balance (no snapshot and fetch failed)")
+        print(f"⚠ Could not load {token_name} balance (no snapshot and fetch failed)")
 
     initial_completed = wallet_manager.count_total_challenges(challenge_tracker)
     print(f"✓ Initial challenges completed: {initial_completed}")
@@ -259,7 +262,7 @@ def main():
     logger.info(f"All {num_workers} workers started successfully")
 
     try:
-        display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracker, initial_completed, night_balance_dict, api_base, start_time)
+        display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracker, initial_completed, night_balance_dict, api_base, start_time, use_defensio_api)
     except KeyboardInterrupt:
         print("\n\nStopping all miners...")
         logger.info("Received shutdown signal, stopping all workers...")
@@ -301,7 +304,7 @@ def main():
     logger.info(f"Session statistics: {session_total_completed} new challenges solved")
     logger.info("Midnight Miner shutdown complete\n\n")
 
-    display_consolidation_warning()
+    display_consolidation_warning(token_name)
 
     return 0
 
